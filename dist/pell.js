@@ -125,7 +125,41 @@ var preventTab = function preventTab(event) {
   if (event.which === 9) event.preventDefault();
 };
 
+var addToActionBar = function(action, actionBar, settings){
+  var button = document.createElement('button');
+  button.className = settings.classes.button;
+  button.innerHTML = action.icon;
+  button.title = action.title;
+  button.onclick = action.result;
+  actionBar.appendChild(button);
+};
+
+var loadPlugin = function(pluginName){
+  return new Promise((resolve, reject) => {
+    var script = document.createElement('script');
+    script.src = 'dist/plugins/' + pluginName + '.js';
+    document.head.appendChild(script);
+
+    script.onload = (e) => {
+      resolve(e);
+    };
+    script.onerror = (e) => {
+      reject(e);
+    }
+  });
+};
+
 var init = function init(settings) {
+  window.pell.plugins = {};
+  settings.plugins.forEach(plugin => {
+    loadPlugin(plugin).then((e) => {
+      addToActionBar(window.pell.plugins[plugin].action, settings.element.querySelector('.' + settings.classes.actionbar), settings);
+    }).catch((e) => {
+      console.log('Cannot load plugin');
+    });
+  });
+
+
   settings.actions = settings.actions ? settings.actions.map(function (action) {
     if (typeof action === 'string') return actions[action];else if (actions[action.name]) return _extends({}, actions[action.name], action);
     return action;
@@ -149,12 +183,7 @@ var init = function init(settings) {
   settings.element.appendChild(settings.element.content);
 
   settings.actions.forEach(function (action) {
-    var button = document.createElement('button');
-    button.className = settings.classes.button;
-    button.innerHTML = action.icon;
-    button.title = action.title;
-    button.onclick = action.result;
-    actionbar.appendChild(button);
+    addToActionBar(action, actionbar, settings);
   });
 
   if (settings.styleWithCSS) exec('styleWithCSS');
